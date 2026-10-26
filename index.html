@@ -15,6 +15,8 @@
   <!-- Three.js & Globe.gl for 3D Globe -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/globe.gl@2.32.3/dist/globe.gl.min.js"></script>
+  <!-- html2canvas for High Quality Map & Card Snapshots -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <!-- Google Fonts: Plus Jakarta Sans, Sarabun & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -186,6 +188,14 @@
       <button onclick="toggleEarthSpin()" id="btn-spin" title="เปิด/ปิดการหมุนโลกอัตโนมัติ" class="px-2.5 py-1.5 text-xs rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition flex items-center gap-1.5 hover:border-sky-500/40">
         <svg id="spin-icon" class="w-3.5 h-3.5 text-sky-400 animate-spin" style="animation-duration: 8s;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         <span id="spin-btn-text" class="hidden sm:inline font-medium text-[11px]">Auto Spin</span>
+      </button>
+
+      <!-- Broadcast & Social Share Studio Button -->
+      <button onclick="openBroadcastModal()" title="สร้างข้อความเตือนภัยและแคปภาพส่งโซเชียล" class="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-bold shadow-md shadow-orange-500/25 transition flex items-center gap-1.5 ring-1 ring-white/30">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"></path>
+        </svg>
+        <span>สร้างโพสต์เตือนภัย</span>
       </button>
 
       <!-- Toggle 2D/3D Quickly -->
@@ -492,6 +502,195 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- 7. BROADCAST & SOCIAL SHARE STUDIO (สร้างโพสต์ & แคปรูปเตือนภัย) -->
+  <!-- ======================================================== -->
+  <div id="broadcast-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-4 transition-all">
+    <div class="glass-hud max-w-4xl w-full rounded-3xl p-4 sm:p-6 relative border border-slate-700/80 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col">
+      
+      <!-- ส่วนหัว Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/20 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+              <span>ศูนย์ส่งสัญญาณเตือนภัย & แชร์โซเชียล</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30">Broadcast Studio</span>
+            </h2>
+            <p class="text-[11px] text-slate-400 font-sans">เขียนข้อความแจ้งเตือน แคปเจอร์ภาพลูกโลก 3D และดาวน์โหลดการ์ดแชร์ส่งต่อ LINE, IG, FB</p>
+          </div>
+        </div>
+        <button onclick="closeBroadcastModal()" class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-2xl transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- ส่วนจัดการเนื้อหาและการ์ดพรีวิว -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
+        
+        <!-- ฝั่งซ้าย: ตัวเลือกเหตุการณ์ + ข้อความโพสต์ (7 คอลัมน์) -->
+        <div class="lg:col-span-7 space-y-3.5">
+          
+          <!-- แถบเลือกเหตุการณ์อัตโนมัติ -->
+          <div class="p-3 rounded-2xl bg-slate-950/70 border border-white/5 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span>เลือกเหตุการณ์เพื่อสร้างโพสต์เตือนภัย:</span>
+              </label>
+              <button onclick="populateAlertWithLatest()" class="text-[10px] text-sky-400 hover:text-sky-300 underline font-mono-code">
+                ดึงเหตุการณ์ล่าสุด
+              </button>
+            </div>
+            <select id="broadcast-event-select" onchange="onSelectEventForBroadcast()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-sans">
+              <option value="">-- กำลังโหลดรายการเหตุการณ์... --</option>
+            </select>
+          </div>
+
+          <!-- รูปแบบเทมเพลตสำหรับโซเชียลมีเดีย -->
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+              <span>เลือกรูปแบบข้อความ (Social Presets):</span>
+              <span class="text-[10px] text-slate-400 font-mono-code" id="char-counter">0 ตัวอักษร</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="applyPresetTemplate('line')" class="py-1.5 px-2 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>💬 สไตล์ LINE</span>
+              </button>
+              <button onclick="applyPresetTemplate('fb')" class="py-1.5 px-2 rounded-xl bg-blue-950/50 hover:bg-blue-900/60 border border-blue-500/30 text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>📘 สไตล์ Facebook</span>
+              </button>
+              <button onclick="applyPresetTemplate('ig')" class="py-1.5 px-2 rounded-xl bg-fuchsia-950/50 hover:bg-fuchsia-900/60 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>📸 สไตล์ IG/Story</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- กล่องเขียน/ปรับแต่งข้อความ -->
+          <div class="space-y-1.5">
+            <textarea id="broadcast-text-input" oninput="updateAlertCardPreview()" rows="7" class="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl p-3 text-xs text-slate-100 focus:outline-none focus:border-amber-500 font-sans leading-relaxed custom-scrollbar resize-none" placeholder="พิมพ์หรือปรับแต่งข้อความเตือนภัยที่นี่..."></textarea>
+          </div>
+
+          <!-- ปุ่มคำสั่งแชร์ด่วน -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <!-- คัดลอกข้อความ -->
+            <button onclick="copyBroadcastText()" id="btn-copy-broadcast" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-600 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+              <span>คัดลอกข้อความ</span>
+            </button>
+
+            <!-- แชร์เข้า LINE ตรง -->
+            <button onclick="shareDirectLine()" class="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 transition">
+              <span>💬 ส่งเข้า LINE</span>
+            </button>
+
+            <!-- แชร์เข้า Facebook -->
+            <button onclick="shareDirectFacebook()" class="py-2 px-3 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-sky-700/30 transition">
+              <span>📘 แชร์ Facebook</span>
+            </button>
+
+            <!-- ดาวน์โหลดภาพการ์ด -->
+            <button onclick="downloadAlertCardImage()" id="btn-save-img" class="py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/30 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              <span>บันทึกรูปภาพ</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ฝั่งขวา: การ์ดอินโฟกราฟิกพร้อมแคปภาพ (5 คอลัมน์) -->
+        <div class="lg:col-span-5 flex flex-col items-center">
+          <div class="w-full flex items-center justify-between pb-2 text-[11px] font-bold text-slate-400">
+            <span>ภาพการ์ดเตือนภัย (Infographic Preview):</span>
+            <span class="text-[10px] text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> พร้อมบันทึกภาพ
+            </span>
+          </div>
+
+          <!-- ตัวการ์ดที่จะถูกจับภาพเป็น PNG ส่งต่อใน IG / FB Story / Chat -->
+          <div id="hazard-infographic-card" class="w-full rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-black p-4 border border-rose-500/40 shadow-2xl relative overflow-hidden flex flex-col justify-between" style="min-height: 380px;">
+            
+            <!-- ตกแต่งแบ็กกราวด์นีออน -->
+            <div class="absolute -top-12 -right-12 w-36 h-36 bg-rose-600/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-sky-600/20 rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- การ์ดส่วนหัว -->
+            <div class="relative z-10">
+              <div class="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-rose-500/30 border border-rose-500/50 flex items-center justify-center text-rose-300 text-xs font-black">
+                    !
+                  </div>
+                  <div>
+                    <div class="text-[10px] font-extrabold tracking-wider uppercase text-rose-400 font-mono-code">Earthquake Alert Report</div>
+                    <div class="text-xs font-bold text-white tracking-wide">รายงานสถานการณ์แผ่นดินไหว</div>
+                  </div>
+                </div>
+                <div class="text-[9px] font-mono-code text-slate-400 text-right">
+                  <div class="text-emerald-400 font-bold">VERIFIED</div>
+                  <div id="card-date-time">Today, --:--</div>
+                </div>
+              </div>
+
+              <!-- แสดงขนาดความรุนแรงและตำแหน่งแบบเด่นชัด -->
+              <div class="flex items-center gap-3.5 my-3 p-3 rounded-xl bg-slate-900/90 border border-white/10">
+                <div id="card-mag-badge" class="w-14 h-14 rounded-2xl bg-rose-600/30 border-2 border-rose-500 flex flex-col items-center justify-center font-mono-code shadow-lg shadow-rose-600/30 flex-shrink-0">
+                  <span class="text-[10px] font-bold text-rose-300 leading-none">MAG</span>
+                  <span id="card-mag-val" class="text-xl font-extrabold text-white mt-0.5">5.0</span>
+                </div>
+                <div class="min-w-0">
+                  <div id="card-place-title" class="text-xs sm:text-sm font-bold text-slate-100 line-clamp-2 leading-tight">
+                    ศูนย์กลางแผ่นดินไหว
+                  </div>
+                  <div id="card-depth-val" class="text-[11px] text-cyan-400 font-mono-code mt-1">
+                    ความลึก: 10 กม. • ล่าสุด
+                  </div>
+                </div>
+              </div>
+
+              <!-- รายละเอียดพิกัด & คำเตือนระวังภัย -->
+              <div class="p-2.5 rounded-xl bg-slate-950/70 border border-white/5 space-y-1.5 text-[11px]">
+                <div class="flex items-center justify-between text-slate-300 font-mono-code text-[10px]">
+                  <span>พิกัดทางภูมิศาสตร์:</span>
+                  <span id="card-coords-val" class="text-sky-300 font-bold">--°N, --°E</span>
+                </div>
+                <div class="flex items-center justify-between text-slate-300 font-mono-code text-[10px]">
+                  <span>สถานะการเฝ้าระวัง:</span>
+                  <span id="card-level-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">เฝ้าระวังต่อเนื่อง</span>
+                </div>
+                <div id="card-advice-text" class="text-[10px] text-slate-400 pt-1 leading-snug border-t border-white/5 font-sans">
+                  คำแนะนำ: ผู้ที่อยู่ในอาคารสูงควรสังเกตการสั่นไหว ตรวจสอบรอยร้าว และติดตามประกาศทางการอย่างใกล้ชิด
+                </div>
+              </div>
+            </div>
+
+            <!-- ลายน้ำ Footer -->
+            <div class="relative z-10 pt-3 border-t border-white/10 flex items-center justify-between text-[9px] text-slate-500 font-mono-code">
+              <span class="flex items-center gap-1 text-slate-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                <span>GLOBAL 3D MONITOR • USGS DATA</span>
+              </span>
+              <span>EARTH HAZARD SENTINEL</span>
+            </div>
+
+          </div>
+
+          <!-- ข้อความบอกสถานะการคัดลอก/บันทึกภาพ -->
+          <div id="broadcast-feedback" class="mt-2 text-xs text-cyan-300 font-sans hidden animate-pulse">
+            ✓ คัดลอกข้อความลงคลิปบอร์ดแล้ว
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
   <script>
     // State Variables
     let currentMode = '3d';
@@ -504,6 +703,7 @@
     let tectonicPlatesData = null;
     let isLeftOpen = false;
     let isRightOpen = false;
+    let currentSelectedQuakeForBroadcast = null;
 
     // Database: Country Coordinates & Labels
     const countryLabels = [
@@ -863,9 +1063,13 @@
         card.onclick = () => {
           flyToLocation(lat, lon, 1.35, 6);
           autoCollapseOnMobile();
+          // อัปเดตข้อมูลเหตุการณ์ที่เลือกไว้สำหรับ Broadcast Studio ทันที
+          currentSelectedQuakeForBroadcast = quake;
         };
         listEl.appendChild(card);
       });
+      // อัปเดต Dropdown ใน Broadcast Studio
+      updateBroadcastEventDropdown();
     }
 
     function getTimeAgo(timestamp) {
@@ -1129,6 +1333,217 @@
     }
     function closeModal() {
       document.getElementById('portfolio-modal').classList.add('hidden');
+    }
+
+    // ========================================================
+    // 7. BROADCAST & SOCIAL SHARE STUDIO LOGIC
+    // ========================================================
+    function openBroadcastModal() {
+      document.getElementById('broadcast-modal').classList.remove('hidden');
+      updateBroadcastEventDropdown();
+      if (!currentSelectedQuakeForBroadcast && allQuakes.length > 0) {
+        populateAlertWithLatest();
+      } else {
+        updateAlertCardPreview();
+      }
+    }
+
+    function closeBroadcastModal() {
+      document.getElementById('broadcast-modal').classList.add('hidden');
+    }
+
+    function updateBroadcastEventDropdown() {
+      const select = document.getElementById('broadcast-event-select');
+      if (!select) return;
+      select.innerHTML = '';
+
+      if (allQuakes.length === 0) {
+        select.innerHTML = '<option value="">ไม่มีข้อมูลแผ่นดินไหวในขณะนี้</option>';
+        return;
+      }
+
+      allQuakes.slice(0, 30).forEach((q, index) => {
+        const mag = q.properties.mag.toFixed(1);
+        const place = q.properties.place;
+        const opt = document.createElement('option');
+        opt.value = q.id || index;
+        opt.textContent = `[M ${mag}] ${place}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function populateAlertWithLatest() {
+      if (allQuakes.length > 0) {
+        currentSelectedQuakeForBroadcast = allQuakes[0];
+        const select = document.getElementById('broadcast-event-select');
+        if (select) select.selectedIndex = 0;
+        applyPresetTemplate('line');
+      }
+    }
+
+    function onSelectEventForBroadcast() {
+      const select = document.getElementById('broadcast-event-select');
+      const selectedIndex = select.selectedIndex;
+      if (selectedIndex >= 0 && allQuakes[selectedIndex]) {
+        currentSelectedQuakeForBroadcast = allQuakes[selectedIndex];
+        applyPresetTemplate('line');
+      }
+    }
+
+    function applyPresetTemplate(platform) {
+      if (!currentSelectedQuakeForBroadcast && allQuakes.length > 0) {
+        currentSelectedQuakeForBroadcast = allQuakes[0];
+      }
+      if (!currentSelectedQuakeForBroadcast) return;
+
+      const q = currentSelectedQuakeForBroadcast;
+      const mag = q.properties.mag.toFixed(1);
+      const place = q.properties.place;
+      const [lon, lat, depth] = q.geometry.coordinates;
+      const timeStr = new Date(q.properties.time).toLocaleString('th-TH');
+      const latT = lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`;
+      const lonT = lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`;
+
+      let text = '';
+      if (platform === 'line') {
+        text = `🚨 [รายงานแจ้งเตือนแผ่นดินไหว]\n` +
+               `⚡ ขนาด: M ${mag} แมกนิจูด\n` +
+               `📍 จุดศูนย์กลาง: ${place}\n` +
+               `🌐 พิกัด: ${latT}, ${lonT} (ความลึก ${depth} กม.)\n` +
+               `🕒 เวลาตรวจพบ: ${timeStr}\n\n` +
+               `⚠️ ข้อควรระวัง: ขอให้ประชาชนในบริเวณใกล้เคียงและผู้ที่อยู่ในอาคารสูงเฝ้าระวังการสั่นไหวและติดตามประกาศเตือนภัยจากทางการอย่างใกล้ชิดครับ\n` +
+               `🛰️ ข้อมูลสด: Global Earth Hazard Sentinel`;
+      } else if (platform === 'fb') {
+        text = `🔴 รายงานสถานการณ์ภัยพิบัติแผ่นดินไหวล่าสุด (USGS Real-time GeoJSON)\n\n` +
+               `ตรวจพบคลื่นแผ่นดินไหวขนาด M ${mag} แมกนิจูด บริเวณ "${place}" ที่ระดับความลึก ${depth} กิโลเมตรจากผิวดิน เมื่อเวลา ${timeStr}\n\n` +
+               `📍 พิกัดทางธรณีวิทยา: ${latT}, ${lonT}\n` +
+               `📊 การประเมินความเสี่ยง: ขอให้ประชาชนที่อาศัยอยู่บริเวณชายฝั่งหรือแนวรอยต่อแผ่นเปลือกโลก สังเกตการเปลี่ยนแปลงของระดับน้ำและรอยแตกร้าวของสิ่งปลูกสร้าง\n\n` +
+               `#รายงานแผ่นดินไหว #เตือนภัยพิบัติ #EarthquakeAlert #USGS #GlobalEarthHazardMonitor`;
+      } else if (platform === 'ig') {
+        text = `🚨 EARTHQUAKE ALERT • M ${mag}\n` +
+               `📍 ${place}\n` +
+               `• Depth: ${depth} km | Coordinates: ${latT}, ${lonT}\n` +
+               `• Time: ${timeStr}\n` +
+               `⚠️ โปรดระมัดระวังและตรวจสอบความปลอดภัยของอาคารที่พักอาศัย\n\n` +
+               `#earthquake #hazardalert #seismic #monitoring #liveearth`;
+      }
+
+      const input = document.getElementById('broadcast-text-input');
+      if (input) {
+        input.value = text;
+        updateAlertCardPreview();
+      }
+    }
+
+    function updateAlertCardPreview() {
+      const input = document.getElementById('broadcast-text-input');
+      const charCounter = document.getElementById('char-counter');
+      if (input && charCounter) {
+        charCounter.innerText = `${input.value.length} ตัวอักษร`;
+      }
+
+      if (!currentSelectedQuakeForBroadcast) return;
+      const q = currentSelectedQuakeForBroadcast;
+      const mag = q.properties.mag;
+      const place = q.properties.place;
+      const [lon, lat, depth] = q.geometry.coordinates;
+
+      const magValEl = document.getElementById('card-mag-val');
+      const magBadgeEl = document.getElementById('card-mag-badge');
+      const placeTitleEl = document.getElementById('card-place-title');
+      const depthValEl = document.getElementById('card-depth-val');
+      const coordsValEl = document.getElementById('card-coords-val');
+      const levelBadgeEl = document.getElementById('card-level-badge');
+      const dateTimeEl = document.getElementById('card-date-time');
+
+      if (magValEl) magValEl.innerText = mag.toFixed(1);
+      if (placeTitleEl) placeTitleEl.innerText = place;
+      if (depthValEl) depthValEl.innerText = `ความลึก: ${depth} กม. • ${getTimeAgo(q.properties.time)}`;
+      
+      const latT = lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`;
+      const lonT = lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`;
+      if (coordsValEl) coordsValEl.innerText = `${latT}, ${lonT}`;
+      if (dateTimeEl) dateTimeEl.innerText = new Date(q.properties.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+      // กำหนดสีตามระดับความรุนแรง
+      if (mag >= 6.5) {
+        magBadgeEl.className = "w-14 h-14 rounded-2xl bg-rose-600/40 border-2 border-rose-500 flex flex-col items-center justify-center font-mono-code shadow-lg shadow-rose-600/40 flex-shrink-0 animate-pulse";
+        levelBadgeEl.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40";
+        levelBadgeEl.innerText = "ระดับรุนแรง (Major Hazard)";
+      } else if (mag >= 5.0) {
+        magBadgeEl.className = "w-14 h-14 rounded-2xl bg-amber-600/30 border-2 border-amber-500 flex flex-col items-center justify-center font-mono-code shadow-lg shadow-amber-600/30 flex-shrink-0";
+        levelBadgeEl.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        levelBadgeEl.innerText = "เฝ้าระวังต่อเนื่อง (Moderate)";
+      } else {
+        magBadgeEl.className = "w-14 h-14 rounded-2xl bg-sky-600/30 border-2 border-sky-500 flex flex-col items-center justify-center font-mono-code shadow-lg shadow-sky-600/30 flex-shrink-0";
+        levelBadgeEl.className = "px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30";
+        levelBadgeEl.innerText = "ระดับทั่วไป (Notable)";
+      }
+    }
+
+    function showFeedback(msg) {
+      const fb = document.getElementById('broadcast-feedback');
+      if (fb) {
+        fb.innerText = msg;
+        fb.classList.remove('hidden');
+        setTimeout(() => fb.classList.add('hidden'), 3500);
+      }
+    }
+
+    function copyBroadcastText() {
+      const input = document.getElementById('broadcast-text-input');
+      if (!input) return;
+      input.select();
+      input.setSelectionRange(0, 99999);
+      document.execCommand('copy');
+      showFeedback('✓ คัดลอกข้อความเตือนภัยลงคลิปบอร์ดแล้ว!');
+    }
+
+    function shareDirectLine() {
+      const input = document.getElementById('broadcast-text-input');
+      if (!input || !input.value) return;
+      const encoded = encodeURIComponent(input.value);
+      const lineUrl = `https://line.me/R/msg/text/?${encoded}`;
+      window.open(lineUrl, '_blank');
+      showFeedback('กำลังส่งต่อไปยัง LINE...');
+    }
+
+    function shareDirectFacebook() {
+      const shareUrl = encodeURIComponent(window.location.href);
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank', 'width=600,height=500');
+      copyBroadcastText();
+      showFeedback('คัดลอกข้อความและเปิด Facebook แล้ว!');
+    }
+
+    async function downloadAlertCardImage() {
+      const card = document.getElementById('hazard-infographic-card');
+      const saveBtn = document.getElementById('btn-save-img');
+      if (!card) return;
+
+      const origText = saveBtn ? saveBtn.innerHTML : '';
+      if (saveBtn) saveBtn.innerHTML = '<span>กำลังเรนเดอร์ภาพ...</span>';
+
+      try {
+        const canvas = await html2canvas(card, {
+          backgroundColor: '#030712',
+          scale: 2.5,
+          useCORS: true,
+          logging: false
+        });
+
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+        link.download = `earthquake-hazard-alert-${timestamp}.png`;
+        link.href = image;
+        link.click();
+        showFeedback('✓ ดาวน์โหลดภาพการ์ดเตือนภัย (PNG) สำเร็จแล้ว!');
+      } catch (err) {
+        console.error("Image generation error:", err);
+        showFeedback('เกิดข้อผิดพลาดในการบันทึกภาพ กรุณาลองอีกครั้ง');
+      } finally {
+        if (saveBtn) saveBtn.innerHTML = origText;
+      }
     }
 
     window.addEventListener('resize', () => {
