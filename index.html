@@ -3,19 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Global Earth Hazard Monitor (2D แผนที่ & 3D ลูกโลก)</title>
+  <title>Global Earth Hazard Monitor • 3D Globe & 2D GIS</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Leaflet CSS & JS for 2D Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
   <!-- Three.js & Globe.gl for 3D Globe -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/globe.gl@2.32.3/dist/globe.gl.min.js"></script>
-  <!-- Google Fonts: Sarabun & Inter -->
+  
+  <!-- Google Fonts: Plus Jakarta Sans, Sarabun & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <style>
     * {
       box-sizing: border-box;
@@ -28,10 +33,15 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background-color: #030712;
-      font-family: 'Sarabun', 'Inter', sans-serif;
-      color: #f1f5f9;
+      background-color: #020617;
+      font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+      color: #f8fafc;
     }
+    
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     #globe-canvas, #map-canvas {
       width: 100vw;
       height: 100vh;
@@ -39,284 +49,451 @@
       top: 0;
       left: 0;
     }
-    #globe-canvas {
-      z-index: 1;
-    }
-    #map-canvas {
-      z-index: 2;
-    }
+    #globe-canvas { z-index: 1; }
+    #map-canvas { z-index: 2; }
+
+    /* Ultra Modern Glassmorphism HUD */
     .glass-hud {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+      background: rgba(10, 15, 30, 0.72);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.08);
     }
-    .glass-drawer {
-      background: rgba(15, 23, 42, 0.94);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    .glass-card:hover {
+      background: rgba(30, 41, 59, 0.75);
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 6px 20px -4px rgba(56, 189, 248, 0.15);
+    }
+
+    /* Floating Dock Button */
+    .dock-trigger {
+      background: rgba(10, 15, 30, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.2);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dock-trigger:hover {
+      border-color: rgba(56, 189, 248, 0.6);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Custom Slim Scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+      background: transparent;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.35);
-      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 999px;
     }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.5);
+    }
+
+    /* Modern Toggle Switch Component */
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #38bdf8;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Leaflet Overrides */
     .leaflet-popup-content-wrapper {
-      background: rgba(15, 23, 42, 0.95) !important;
+      background: rgba(10, 15, 30, 0.95) !important;
       color: #f1f5f9 !important;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px !important;
-      font-family: 'Sarabun', sans-serif !important;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 16px !important;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7) !important;
+      backdrop-filter: blur(16px);
     }
     .leaflet-popup-tip {
-      background: rgba(15, 23, 42, 0.95) !important;
+      background: rgba(10, 15, 30, 0.95) !important;
     }
   </style>
 </head>
 <body class="relative">
 
-  <!-- 1. ผืนผ้าใบแสดงผล 3D Globe -->
+  <!-- 1. 3D Globe Canvas -->
   <div id="globe-canvas"></div>
 
-  <!-- 2. ผืนผ้าใบแสดงผล 2D Leaflet Map -->
+  <!-- 2. 2D Leaflet Canvas -->
   <div id="map-canvas" class="hidden"></div>
 
-  <!-- แถบด้านบน: Top HUD ยุบกระชับอัตโนมัติบนมือถือ -->
-  <header class="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between glass-hud px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl">
-    <div class="flex items-center space-x-2 sm:space-x-3">
-      <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-rose-500 flex items-center justify-center shadow-md flex-shrink-0">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <!-- 3. TOP NAVIGATION HUD -->
+  <header class="absolute top-3 left-3 right-3 z-30 flex items-center justify-between glass-hud px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl transition-all">
+    <div class="flex items-center space-x-3">
+      <div class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-rose-500 flex items-center justify-center shadow-lg shadow-sky-500/20 flex-shrink-0 ring-1 ring-white/20">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" stroke-width="1.8"></circle>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.5 12h19M12 2.5a15.3 15.3 0 014 9.5 15.3 15.3 0 01-4 9.5 15.3 15.3 0 01-4-9.5A15.3 15.3 0 0112 2.5z"></path>
         </svg>
+        <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
       </div>
       <div>
-        <h1 class="text-xs sm:text-sm font-bold tracking-wide text-white flex items-center gap-1 sm:gap-2">
-          <span>Global 3D Earth</span>
-          <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] sm:text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1"></span> Live
-          </span>
-        </h1>
-        <p class="hidden sm:block text-[11px] text-slate-300 font-sans">Satellite Imagery • Tectonic Faults • Global Climate</p>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xs sm:text-sm font-extrabold tracking-wide text-white">EARTH <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-300">SENTINEL</span></h1>
+          <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">Live Feed</span>
+        </div>
+        <p class="hidden sm:block text-[10px] text-slate-400 tracking-wider uppercase font-mono-code">USGS GeoJSON • Planetary Tectonics • Atmosphere</p>
       </div>
     </div>
 
-    <!-- สถิติย่อบนแถบด้านบน (แสดงบนจอใหญ่) -->
-    <div class="hidden lg:flex items-center space-x-5 text-xs">
-      <div class="flex items-center space-x-1.5 font-sans">
-        <span class="text-slate-400">Pointer:</span>
-        <span id="stat-mouse-coords" class="font-semibold text-cyan-400">Hover on Map</span>
+    <!-- Live Telemetry Status Bar (Desktop) -->
+    <div class="hidden xl:flex items-center space-x-6 text-[11px] font-mono-code bg-slate-950/40 px-4 py-1.5 rounded-xl border border-white/5">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span class="text-slate-400">COORDS:</span>
+        <span id="stat-mouse-coords" class="text-cyan-300 font-medium">13.75°N, 100.50°E</span>
       </div>
-      <div class="flex items-center space-x-1.5 font-sans">
-        <span class="text-slate-400">Quakes:</span>
-        <span id="stat-quake-count" class="font-bold text-amber-400">--</span>
+      <div class="w-px h-3 bg-slate-700"></div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">EVENTS:</span>
+        <span id="stat-quake-count" class="text-amber-400 font-bold">--</span>
       </div>
-      <div class="flex items-center space-x-1.5 font-sans">
-        <span class="text-slate-400">Max Mag:</span>
-        <span id="stat-max-mag" class="font-bold text-rose-400">-- M</span>
+      <div class="w-px h-3 bg-slate-700"></div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">MAX MAG:</span>
+        <span id="stat-max-mag" class="text-rose-400 font-bold">-- M</span>
       </div>
-      <div class="flex items-center space-x-1.5 font-sans">
-        <span class="text-slate-400">View Mode:</span>
-        <span id="stat-view-mode" class="font-semibold text-sky-400">3D Globe</span>
+      <div class="w-px h-3 bg-slate-700"></div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">ENGINE:</span>
+        <span id="stat-view-mode" class="text-sky-400 font-semibold uppercase">3D Globe</span>
       </div>
     </div>
 
-    <!-- ปุ่มคำสั่งด้านบน -->
-    <div class="flex items-center space-x-1 sm:space-x-2">
-      <!-- ปุ่มหมุนลูกโลก -->
-      <button onclick="toggleEarthSpin()" id="btn-spin" class="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1 font-sans">
-        <svg class="w-3 h-3 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        <span id="spin-btn-text" class="hidden sm:inline">Toggle Spin</span>
+    <!-- Header Quick Actions -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <!-- Spin Toggle -->
+      <button onclick="toggleEarthSpin()" id="btn-spin" title="เปิด/ปิดการหมุนโลกอัตโนมัติ" class="px-2.5 py-1.5 text-xs rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition flex items-center gap-1.5 hover:border-sky-500/40">
+        <svg id="spin-icon" class="w-3.5 h-3.5 text-sky-400 animate-spin" style="animation-duration: 8s;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span id="spin-btn-text" class="hidden sm:inline font-medium text-[11px]">Auto Spin</span>
       </button>
 
-      <!-- ปุ่มเปิดรายการแผ่นดินไหว/สภาพอากาศ (ฝั่งซ้าย) -->
-      <button onclick="toggleDrawer('sidebar')" class="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1 font-sans">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-        <span>Telemetry</span>
-      </button>
+      <!-- Toggle 2D/3D Quickly -->
+      <div class="flex bg-slate-950/70 p-0.5 rounded-xl border border-slate-800">
+        <button onclick="switchDisplayMode('3d')" id="btn-quick-3d" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-sm flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"></circle><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path></svg>
+          <span class="hidden md:inline">3D</span>
+        </button>
+        <button onclick="switchDisplayMode('2d')" id="btn-quick-2d" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-white transition flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+          <span class="hidden md:inline">2D</span>
+        </button>
+      </div>
 
-      <!-- ปุ่มเปิดแผงตั้งค่าและเลเยอร์ (ฝั่งขวา) สำหรับมือถือและจอคอม -->
-      <button onclick="toggleDrawer('right-panel')" class="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs rounded-xl bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-600/50 transition flex items-center gap-1 font-sans">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-        <span>เมนู & เลเยอร์</span>
-      </button>
-
-      <!-- ปุ่มข้อมูลพอร์ตฟอลิโอ -->
-      <button onclick="openModal()" class="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white font-medium shadow-md transition font-sans">
-        Portfolio
+      <!-- Portfolio Modal Button -->
+      <button onclick="openModal()" class="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-semibold shadow-md shadow-rose-600/25 transition">
+        Info
       </button>
     </div>
   </header>
 
-  <!-- แผงด้านซ้าย: รายการแผ่นดินไหว & สภาพอากาศ (Drawer ซ่อนเป็นค่าเริ่มต้นบนมือถือ) -->
-  <aside id="sidebar" class="absolute top-14 sm:top-16 left-2 sm:left-3 bottom-2 sm:bottom-3 w-[88vw] max-w-xs sm:w-80 z-40 glass-drawer rounded-2xl flex flex-col transition-all duration-300 transform -translate-x-[110%] sm:translate-x-0">
-    <div class="flex items-center justify-between border-b border-slate-800 p-2 text-sm font-sans">
-      <div class="flex flex-1 gap-1">
-        <button id="tab-btn-quakes" onclick="switchTab('quakes')" class="flex-1 py-1 rounded-xl font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 transition text-center text-xs">
-          Earthquakes (<span id="tab-count-quake">0</span>)
-        </button>
-        <button id="tab-btn-cities" onclick="switchTab('cities')" class="flex-1 py-1 rounded-xl font-medium text-slate-400 hover:text-slate-200 transition text-center text-xs">
-          Weather
-        </button>
+  <!-- ========================================== -->
+  <!-- 4. เมนูฝั่งซ้าย (COLLAPSIBLE TELEMETRY DOCK) -->
+  <!-- ========================================== -->
+
+  <!-- ปุ่มสัญลักษณ์ย่อ/ขยาย (Left Trigger Tab) -->
+  <div id="left-dock-trigger" class="absolute top-20 left-3 z-40">
+    <button onclick="toggleLeftPanel()" class="dock-trigger px-3 py-2.5 rounded-2xl flex items-center gap-2.5 text-slate-200 group">
+      <div class="relative flex items-center justify-center">
+        <svg class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span class="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
       </div>
-      <!-- ปุ่มกดย่อปิดสำหรับมือถือ -->
-      <button onclick="toggleDrawer('sidebar')" class="ml-1 p-1 text-slate-400 hover:text-white rounded-lg">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div class="text-left hidden sm:block">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+          <span>Seismic Hub</span>
+          <span id="badge-quake-counter" class="bg-rose-500/30 text-rose-300 px-1.5 py-0.2 rounded font-mono-code text-[10px] border border-rose-500/40">0</span>
+        </div>
+        <div class="text-[9px] text-slate-400">Live Quakes & Weather</div>
+      </div>
+      <svg id="left-dock-arrow" class="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- แผงหน้าต่างฝั่งซ้าย (Expanded Panel) -->
+  <aside id="left-panel" class="absolute top-20 left-3 bottom-3 w-[92vw] max-w-sm sm:w-84 z-40 glass-hud rounded-3xl flex flex-col transition-all duration-400 ease-out transform -translate-x-[115%] opacity-0 pointer-events-none">
+    
+    <!-- ส่วนหัวแผงซ้าย -->
+    <div class="flex items-center justify-between p-3.5 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-xs font-bold text-white tracking-wide uppercase">Real-Time Hazards</h2>
+          <p class="text-[10px] text-slate-400 font-mono-code" id="live-clock">Syncing feed...</p>
+        </div>
+      </div>
+      
+      <!-- ปุ่มกดยุบกลับเป็นสัญลักษณ์ -->
+      <button onclick="toggleLeftPanel(false)" class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition" title="ยุบแถบเมนู">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
       </button>
     </div>
 
-    <!-- Quake Filter -->
-    <div id="quake-filter-box" class="p-2 border-b border-slate-800 space-y-1.5 font-sans">
-      <div class="flex gap-1.5">
-        <select id="mag-filter" onchange="filterQuakes()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-rose-500">
-          <option value="all">All Magnitudes (M 2.5+)</option>
-          <option value="4.5" selected>Notable Only (M 4.5+)</option>
-          <option value="5.5">Moderate (M 5.5+)</option>
-          <option value="6.5">Strong (M 6.5+)</option>
-        </select>
-        <button onclick="fetchQuakeData()" title="รีเฟรชข้อมูล" class="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+    <!-- แถบสลับแท็บ Earthquakes / Weather -->
+    <div class="p-3 pb-2">
+      <div class="flex p-1 bg-slate-950/60 rounded-xl border border-white/5 gap-1">
+        <button id="tab-btn-quakes" onclick="switchTab('quakes')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-rose-600/80 to-rose-500/80 text-white shadow-sm border border-rose-400/30">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"></circle><path d="M12 7v5l3 3"></path></svg>
+          <span>Quakes (<span id="tab-count-quake">0</span>)</span>
+        </button>
+        <button id="tab-btn-cities" onclick="switchTab('cities')" class="flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+          <span>Weather</span>
         </button>
       </div>
-      <div class="text-[10px] text-slate-400 flex justify-between">
-        <span>Source: USGS GeoJSON</span>
+    </div>
+
+    <!-- Quake Filter Controls -->
+    <div id="quake-filter-box" class="px-3 pb-2 space-y-2">
+      <div class="flex gap-1.5">
+        <div class="relative flex-1">
+          <select id="mag-filter" onchange="filterQuakes()" class="w-full appearance-none bg-slate-950/80 border border-slate-700/80 hover:border-slate-600 rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-rose-500 transition font-mono-code cursor-pointer">
+            <option value="all">All Magnitude (2.5+)</option>
+            <option value="4.5" selected>Notable Only (4.5+)</option>
+            <option value="5.5">Moderate (5.5+)</option>
+            <option value="6.5">Major Hazard (6.5+)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+        </div>
+
+        <button onclick="fetchQuakeData()" title="ดึงข้อมูลล่าสุด" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-xl text-slate-300 hover:text-white transition flex items-center justify-center">
+          <svg id="quake-refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 font-mono-code">
+        <span>SRC: USGS Seismic API</span>
         <span id="last-update-time">--:--:--</span>
       </div>
     </div>
 
-    <!-- รายการแผ่นดินไหว -->
-    <div id="quakes-panel" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5">
-      <div class="text-center py-6 text-xs text-slate-400 font-sans">Connecting Satellite Stream...</div>
+    <!-- Quakes List Container -->
+    <div id="quakes-panel" class="flex-1 overflow-y-auto custom-scrollbar p-3 pt-0 space-y-2">
+      <div class="text-center py-12 text-xs text-slate-400">กำลังเชื่อมต่อข้อมูลดาวเทียม...</div>
     </div>
 
-    <!-- รายการสภาพอากาศ -->
-    <div id="cities-panel" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5 hidden"></div>
+    <!-- Weather List Container -->
+    <div id="cities-panel" class="flex-1 overflow-y-auto custom-scrollbar p-3 pt-0 space-y-2 hidden">
+      <div class="text-center py-12 text-xs text-slate-400">กำลังดึงข้อมูลสภาพอากาศ...</div>
+    </div>
+
   </aside>
 
-  <!-- แผงด้านขวา: เลเยอร์ & สลับ 2D/3D (Drawer พับเก็บไม่รกหน้าจอบนมือถือ) -->
-  <div id="right-panel" class="absolute top-14 sm:top-16 right-2 sm:right-3 bottom-2 sm:bottom-auto w-[88vw] max-w-xs sm:w-64 z-40 glass-drawer rounded-2xl flex flex-col transition-all duration-300 transform translate-x-[110%] sm:translate-x-0 overflow-y-auto custom-scrollbar p-2.5 space-y-2 max-h-[85vh]">
-    
-    <!-- ปุ่มปิดแผงขวาบนมือถือ -->
-    <div class="flex items-center justify-between pb-1 border-b border-slate-800 sm:hidden">
-      <span class="text-xs font-bold text-slate-200">แผงควบคุม & เลเยอร์</span>
-      <button onclick="toggleDrawer('right-panel')" class="p-1 text-slate-400 hover:text-white rounded-lg">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-    </div>
+  <!-- =========================================== -->
+  <!-- 5. เมนูฝั่งขวา (COLLAPSIBLE LAYERS DOCK)   -->
+  <!-- =========================================== -->
 
-    <!-- 1. ตัวเลือกเลเยอร์ & สลับมุมมอง 2D / 3D -->
-    <div class="rounded-xl overflow-hidden border border-slate-700/60 bg-slate-900/60 p-2.5 space-y-2">
-      <div class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-        <span>ตัวเลือกเลเยอร์การแสดงผล</span>
-      </div>
-
-      <!-- สลับมุมมอง 2D / 3D -->
-      <div class="pt-1">
-        <div class="text-[10px] text-slate-400 mb-1 font-semibold">โหมดมุมมองแผนที่:</div>
-        <div class="grid grid-cols-2 gap-1">
-          <button onclick="switchDisplayMode('2d')" id="btn-mode-2d" class="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1 transition">
-            <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-            <span>แผนที่ 2D</span>
-          </button>
-          <button onclick="switchDisplayMode('3d')" id="btn-mode-3d" class="px-2 py-1 rounded-lg bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[11px] font-semibold flex items-center justify-center gap-1 transition">
-            <svg class="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"></circle><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path></svg>
-            <span>ลูกโลก 3D</span>
-          </button>
+  <!-- ปุ่มสัญลักษณ์ย่อ/ขยาย (Right Trigger Tab) -->
+  <div id="right-dock-trigger" class="absolute top-20 right-3 z-40">
+    <button onclick="toggleRightPanel()" class="dock-trigger px-3 py-2.5 rounded-2xl flex items-center gap-2.5 text-slate-200 group">
+      <svg id="right-dock-arrow" class="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      <div class="text-right hidden sm:block">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-white flex items-center justify-end gap-1.5">
+          <span>Layer Deck</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
         </div>
+        <div class="text-[9px] text-slate-400">GIS Layers & Fly Presets</div>
       </div>
-
-      <!-- รายการเปิดปิดเลเยอร์ -->
-      <div class="pt-1.5 border-t border-slate-800 space-y-1.5">
-        <label class="flex items-center gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
-          <input type="checkbox" id="chk-countries" checked onchange="updateAllLayers()" class="rounded accent-sky-500 w-3.5 h-3.5">
-          <span>ป้ายชื่อประเทศ (Global Names)</span>
-        </label>
-        <label class="flex items-center gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
-          <input type="checkbox" id="chk-plates" checked onchange="updateAllLayers()" class="rounded accent-orange-500 w-3.5 h-3.5">
-          <span>แนวรอยต่อแผ่นเปลือกโลก</span>
-        </label>
-        <label class="flex items-center gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
-          <input type="checkbox" id="chk-graticules" checked onchange="updateAllLayers()" class="rounded accent-indigo-500 w-3.5 h-3.5">
-          <span>เส้นศูนย์สูตร & เส้นทรอปิก</span>
-        </label>
-        <label class="flex items-center gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
-          <input type="checkbox" id="chk-quakes" checked onchange="updateAllLayers()" class="rounded accent-rose-500 w-3.5 h-3.5">
-          <span>หมุดแผ่นดินไหว (USGS)</span>
-        </label>
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500/20 to-cyan-500/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 group-hover:scale-105 transition-transform">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+        </svg>
       </div>
-    </div>
-
-    <!-- 2. เมนูลัดเลือกภูมิภาค -->
-    <div class="rounded-xl overflow-hidden border border-slate-700/60 bg-slate-900/60 p-2 space-y-1">
-      <div class="text-[11px] font-bold text-slate-200 px-1 py-0.5 flex items-center gap-1.5">
-        <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-        <span>บินสำรวจภูมิภาคด่วน</span>
-      </div>
-      <button onclick="flyToLocation(13.75, 100.5, 1.4, 5); autoCloseDrawersOnMobile();" class="w-full text-left px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-[11px] text-slate-200 flex items-center justify-between transition">
-        <span>🇹🇭 เอเชียตะวันออกเฉียงใต้</span>
-        <span class="text-[9px] text-cyan-400 font-mono">13.8°N</span>
-      </button>
-      <button onclick="flyToLocation(-6.2, 106.8, 1.5, 4); autoCloseDrawersOnMobile();" class="w-full text-left px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-[11px] text-slate-200 flex items-center justify-between transition">
-        <span>🇮🇩 อินโดนีเซีย</span>
-        <span class="text-[9px] text-cyan-400 font-mono">6.2°S</span>
-      </button>
-      <button onclick="flyToLocation(35.68, 139.69, 1.4, 4); autoCloseDrawersOnMobile();" class="w-full text-left px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-[11px] text-slate-200 flex items-center justify-between transition">
-        <span>🇯🇵 ญี่ปุ่น</span>
-        <span class="text-[9px] text-cyan-400 font-mono">35.7°N</span>
-      </button>
-      <button onclick="flyToLocation(10.0, 110.0, 2.3, 2); autoCloseDrawersOnMobile();" class="w-full text-left px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-[11px] text-slate-200 flex items-center justify-between transition">
-        <span>🌐 ภาพรวมโลก</span>
-        <span class="text-[9px] text-sky-400 font-mono">Global</span>
-      </button>
-    </div>
-
-    <!-- การควบคุมการใช้งาน -->
-    <div class="rounded-xl border border-slate-700/60 bg-slate-900/40 p-2 text-[10px] text-slate-300 space-y-0.5">
-      <div class="font-bold text-slate-200">วิธีควบคุม:</div>
-      <div>• ลากนิ้วเพื่อหมุนลูกโลก / เลื่อนแผนที่</div>
-      <div>• จีบนิ้วเข้า-ออก เพื่อซูมเข้าและซูมออก</div>
-    </div>
-
+    </button>
   </div>
 
-  <!-- Modal ข้อมูลโครงการ Portfolio -->
-  <div id="portfolio-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="glass-hud max-w-xl w-full rounded-2xl p-4 sm:p-6 relative border border-slate-700/80 max-h-[90vh] overflow-y-auto">
-      <button onclick="closeModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg font-bold">&times;</button>
-      <div class="flex items-center space-x-3 mb-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg text-sm">TCAS</div>
+  <!-- แผงหน้าต่างฝั่งขวา (Expanded Panel) -->
+  <aside id="right-panel" class="absolute top-20 right-3 bottom-3 sm:bottom-auto w-[92vw] max-w-xs sm:w-72 z-40 glass-hud rounded-3xl flex flex-col transition-all duration-400 ease-out transform translate-x-[115%] opacity-0 pointer-events-none max-h-[85vh] overflow-hidden">
+    
+    <!-- ส่วนหัวแผงขวา -->
+    <div class="flex items-center justify-between p-3.5 border-b border-white/10">
+      <!-- ปุ่มกดยุบกลับเป็นสัญลักษณ์ -->
+      <button onclick="toggleRightPanel(false)" class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition" title="ยุบแถบเมนู">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+      </button>
+
+      <div class="flex items-center gap-2 text-right">
         <div>
-          <h2 class="text-sm sm:text-base font-bold text-white">Global 3D & 2D Earth Hazard Monitor</h2>
-          <p class="text-[11px] text-slate-400">ระบบติดตามแผ่นดินไหวและภูมิศาสตร์โลก 2D และ 3D</p>
+          <h2 class="text-xs font-bold text-white tracking-wide uppercase">GIS Controls</h2>
+          <p class="text-[10px] text-slate-400 font-mono-code">Layers & Projection</p>
+        </div>
+        <div class="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
         </div>
       </div>
-      <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
-        <p><strong class="text-white">แนวคิดและที่มา:</strong> เว็บแอปพลิเคชันสำหรับจำลองลูกโลกเสมือนจริง 3 มิติ (3D Globe) และแผนที่ภูมิสารสนเทศ 2 มิติ (2D GIS Map) ที่รองรับการใช้งานทั้งบนคอมพิวเตอร์และมือถือ (iOS & Android) สลับมุมมองได้อย่างอิสระ พร้อมระบบแสดงชื่อประเทศครบถ้วนทุกทวีปทั่วโลก เชื่อมต่อข้อมูลแผ่นดินไหวสดจาก USGS</p>
-        <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1">
-          <div class="font-bold text-sky-400">Tech Stack & Data Sources:</div>
-          <div>• <strong>2D Mapping Engine:</strong> Leaflet.js Interactive GIS (Esri 4K Satellite)</div>
-          <div>• <strong>3D Virtual Globe:</strong> Three.js & Globe.gl WebGL Rendering</div>
-          <div>• <strong>Earthquake Feed:</strong> USGS Real-time GeoJSON API (100% Free)</div>
-          <div>• <strong>Weather Data:</strong> Open-Meteo REST API</div>
-          <div>• <strong>Mobile Optimized:</strong> Responsive Floating Drawers & Gestures</div>
+    </div>
+
+    <div class="overflow-y-auto custom-scrollbar p-3 space-y-3.5">
+      
+      <!-- 1. Projection Mode Switcher -->
+      <div class="p-2.5 rounded-2xl bg-slate-950/60 border border-white/5 space-y-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono-code">Map Engine</span>
+        <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900/90 rounded-xl border border-white/5">
+          <button onclick="switchDisplayMode('3d')" id="btn-panel-3d" class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-sm border border-sky-400/40">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"></circle><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path></svg>
+            <span>3D Globe</span>
+          </button>
+          <button onclick="switchDisplayMode('2d')" id="btn-panel-2d" class="py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+            <span>2D Map</span>
+          </button>
         </div>
       </div>
-      <div class="mt-4 flex justify-end">
-        <button onclick="closeModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">ปิดหน้าต่าง</button>
+
+      <!-- 2. Layer Toggle Controls (iOS Style Switch) -->
+      <div class="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-2.5">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono-code">Visual Layers</span>
+
+        <!-- Country Names -->
+        <label class="flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+            <span class="text-xs text-slate-300 group-hover:text-white transition font-medium">Country Labels</span>
+          </div>
+          <div class="relative inline-block w-9 h-5 align-middle select-none transition duration-200 ease-in">
+            <input type="checkbox" id="chk-countries" checked onchange="updateAllLayers()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer top-0.5 left-0.5 transition-transform duration-200 ease-in checked:translate-x-4 checked:border-sky-500" />
+            <span class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-800 cursor-pointer transition-colors duration-200"></span>
+          </div>
+        </label>
+
+        <!-- Tectonic Plates -->
+        <label class="flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50"></span>
+            <span class="text-xs text-slate-300 group-hover:text-white transition font-medium">Tectonic Faults</span>
+          </div>
+          <div class="relative inline-block w-9 h-5 align-middle select-none transition duration-200 ease-in">
+            <input type="checkbox" id="chk-plates" checked onchange="updateAllLayers()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer top-0.5 left-0.5 transition-transform duration-200 ease-in checked:translate-x-4 checked:border-orange-500" />
+            <span class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-800 cursor-pointer transition-colors duration-200"></span>
+          </div>
+        </label>
+
+        <!-- Graticules / Equator -->
+        <label class="flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="text-xs text-slate-300 group-hover:text-white transition font-medium">Equator & Tropics</span>
+          </div>
+          <div class="relative inline-block w-9 h-5 align-middle select-none transition duration-200 ease-in">
+            <input type="checkbox" id="chk-graticules" checked onchange="updateAllLayers()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer top-0.5 left-0.5 transition-transform duration-200 ease-in checked:translate-x-4 checked:border-yellow-500" />
+            <span class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-800 cursor-pointer transition-colors duration-200"></span>
+          </div>
+        </label>
+
+        <!-- Seismic Markers -->
+        <label class="flex items-center justify-between cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span>
+            <span class="text-xs text-slate-300 group-hover:text-white transition font-medium">USGS Quake Markers</span>
+          </div>
+          <div class="relative inline-block w-9 h-5 align-middle select-none transition duration-200 ease-in">
+            <input type="checkbox" id="chk-quakes" checked onchange="updateAllLayers()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer top-0.5 left-0.5 transition-transform duration-200 ease-in checked:translate-x-4 checked:border-rose-500" />
+            <span class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-800 cursor-pointer transition-colors duration-200"></span>
+          </div>
+        </label>
+
+      </div>
+
+      <!-- 3. Quick Fly Teleport Presets -->
+      <div class="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono-code">Quick Jump Presets</span>
+        <div class="grid grid-cols-1 gap-1.5">
+          <button onclick="flyToLocation(13.75, 100.5, 1.4, 6); autoCollapseOnMobile();" class="w-full text-left px-2.5 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 text-xs text-slate-200 flex items-center justify-between border border-white/5 hover:border-cyan-500/30 transition">
+            <span class="flex items-center gap-1.5"><span>🇹🇭</span> <span>เอเชียตะวันออกเฉียงใต้</span></span>
+            <span class="text-[10px] text-cyan-400 font-mono-code">13.8°N</span>
+          </button>
+          <button onclick="flyToLocation(-0.78, 113.92, 1.5, 5); autoCollapseOnMobile();" class="w-full text-left px-2.5 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 text-xs text-slate-200 flex items-center justify-between border border-white/5 hover:border-cyan-500/30 transition">
+            <span class="flex items-center gap-1.5"><span>🇮🇩</span> <span>อินโดนีเซีย (Ring of Fire)</span></span>
+            <span class="text-[10px] text-cyan-400 font-mono-code">0.8°S</span>
+          </button>
+          <button onclick="flyToLocation(35.68, 139.69, 1.4, 5); autoCollapseOnMobile();" class="w-full text-left px-2.5 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 text-xs text-slate-200 flex items-center justify-between border border-white/5 hover:border-cyan-500/30 transition">
+            <span class="flex items-center gap-1.5"><span>🇯🇵</span> <span>ญี่ปุ่น & แปซิฟิก</span></span>
+            <span class="text-[10px] text-cyan-400 font-mono-code">35.7°N</span>
+          </button>
+          <button onclick="flyToLocation(15.0, 105.0, 2.3, 3); autoCollapseOnMobile();" class="w-full text-left px-2.5 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 text-xs text-slate-200 flex items-center justify-between border border-white/5 hover:border-sky-500/30 transition">
+            <span class="flex items-center gap-1.5"><span>🌐</span> <span>มุมมองภาพรวมทั้งโลก</span></span>
+            <span class="text-[10px] text-sky-400 font-mono-code">Global</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Control Help Note -->
+      <div class="px-2 py-1 text-[10px] text-slate-400 leading-relaxed font-mono-code">
+        💡 <b>Navigation:</b> ลากนิ้ว/เมาส์เพื่อหมุนโลก • กลิ้งล้อเมาส์หรือจีบนิ้วเพื่อ Zoom
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- 6. MODAL ข้อมูลโครงการ (PORTFOLIO INFO) -->
+  <div id="portfolio-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4 transition-opacity">
+    <div class="glass-hud max-w-lg w-full rounded-3xl p-5 sm:p-7 relative border border-slate-700/80 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <button onclick="closeModal()" class="absolute top-4 right-4 p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-rose-500 flex items-center justify-center font-black text-white shadow-lg text-sm tracking-widest">
+          GIS
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white tracking-wide">Earth Hazard Command Platform</h2>
+          <p class="text-xs text-sky-400 font-mono-code">3D Globe & 2D GIS Monitoring System</p>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
+        <p>แพลตฟอร์มจำลองลูกโลกสามมิติเสมือนจริง (Interactive 3D Virtual Globe) และระบบแผนที่ภูมิสารสนเทศสองมิติ (2D GIS Map) พัฒนาเพื่อแสดงผลข้อมูลภัยพิบัติและการตรวจวัดสภาพอากาศสดแบบ Real-Time จากแหล่งข้อมูลที่น่าเชื่อถือระดับสากล</p>
+        
+        <div class="p-3 rounded-2xl bg-slate-950/80 border border-white/5 space-y-1.5 font-mono-code text-[11px]">
+          <div class="text-sky-400 font-bold mb-1">Architecture & Data Feeds:</div>
+          <div class="text-slate-300">• <strong>USGS Real-time GeoJSON:</strong> แผ่นดินไหวล่าสุดพร้อมความลึกและคลื่นสั่นสะเทือน</div>
+          <div class="text-slate-300">• <strong>Globe.gl + Three.js:</strong> เอนจินเรนเดอร์ WebGL ความละเอียดสูง</div>
+          <div class="text-slate-300">• <strong>Leaflet.js & Esri Satellite:</strong> แผนที่ภาพถ่ายดาวเทียมความละเอียดสูง 4K</div>
+          <div class="text-slate-300">• <strong>Tectonic Plates Database:</strong> PB2002 ขอบแผ่นเปลือกโลกทางธรณีวิทยา</div>
+          <div class="text-slate-300">• <strong>Open-Meteo REST API:</strong> ดึงข้อมูลสภาพอากาศทั่วโลก</div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <button onclick="closeModal()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30 transition">
+          ปิดหน้าต่าง
+        </button>
       </div>
     </div>
   </div>
 
   <script>
+    // State Variables
     let currentMode = '3d';
     let globe;
     let map2D;
@@ -325,8 +502,10 @@
     let allQuakes = [];
     let weatherData = [];
     let tectonicPlatesData = null;
+    let isLeftOpen = false;
+    let isRightOpen = false;
 
-    // รายชื่อประเทศครบถ้วนทั่วโลก
+    // Database: Country Coordinates & Labels
     const countryLabels = [
       { name: "THAILAND", lat: 15.87, lon: 100.99, size: 0.85, color: '#38bdf8' },
       { name: "MYANMAR", lat: 21.91, lon: 95.95, size: 0.75, color: '#f1f5f9' },
@@ -383,9 +562,9 @@
     function generateGraticules() {
       const paths = [];
       const parallels = [
-        { lat: 0, name: "Equator (0°)", color: 'rgba(234, 179, 8, 0.7)', weight: 2 },
-        { lat: 23.44, name: "Tropic of Cancer (23.4°N)", color: 'rgba(56, 189, 248, 0.4)', weight: 1 },
-        { lat: -23.44, name: "Tropic of Capricorn (23.4°S)", color: 'rgba(56, 189, 248, 0.4)', weight: 1 }
+        { lat: 0, name: "Equator (0°)", color: 'rgba(234, 179, 8, 0.75)', weight: 2 },
+        { lat: 23.44, name: "Tropic of Cancer (23.4°N)", color: 'rgba(56, 189, 248, 0.45)', weight: 1.2 },
+        { lat: -23.44, name: "Tropic of Capricorn (23.4°S)", color: 'rgba(56, 189, 248, 0.45)', weight: 1.2 }
       ];
       parallels.forEach(p => {
         const coords = [];
@@ -398,7 +577,9 @@
     }
     const graticuleLines = generateGraticules();
 
-    // 1. กำหนดค่าเริ่มต้น 3D Globe
+    // ==========================================
+    // 1. Initializing 3D Globe
+    // ==========================================
     const globeContainer = document.getElementById('globe-canvas');
     globe = Globe()(globeContainer)
       .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
@@ -406,17 +587,17 @@
       .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
       .showAtmosphere(true)
       .atmosphereColor('#38bdf8')
-      .atmosphereAltitude(0.18)
+      .atmosphereAltitude(0.2)
       .labelsData([])
       .labelText(d => d.text)
       .labelSize(d => d.size)
       .labelColor(d => d.color)
-      .labelDotRadius(0.2)
+      .labelDotRadius(0.22)
       .labelAltitude(0.015)
       .labelLat(d => d.lat)
       .labelLng(d => d.lon)
       .labelResolution(3)
-      .onLabelClick(d => flyToLocation(d.lat, d.lon, 1.4, 5))
+      .onLabelClick(d => flyToLocation(d.lat, d.lon, 1.4, 6))
       .pointsData([])
       .pointLat(d => d.lat)
       .pointLng(d => d.lon)
@@ -424,12 +605,12 @@
       .pointAltitude(d => d.alt)
       .pointRadius(d => d.radius)
       .pointLabel(d => d.label)
-      .onPointClick(d => flyToLocation(d.lat, d.lon, 1.4, 6))
+      .onPointClick(d => flyToLocation(d.lat, d.lon, 1.4, 7))
       .ringsData([])
       .ringColor(d => d.color)
       .ringMaxRadius(d => d.maxR)
-      .ringPropagationSpeed(1.5)
-      .ringRepeatPeriod(1000)
+      .ringPropagationSpeed(1.6)
+      .ringRepeatPeriod(900)
       .pathsData([])
       .pathPoints(d => d.coords)
       .pathColor(d => d.color)
@@ -440,10 +621,13 @@
     globe.pointOfView({ lat: 13.75, lng: 100.5, altitude: 2.1 });
 
     globe.controls().addEventListener('start', () => {
-      document.getElementById('spin-btn-text').innerText = "Manual";
+      document.getElementById('spin-btn-text').innerText = "Spin: Off";
+      document.getElementById('spin-icon').classList.remove('animate-spin');
     });
 
-    // 2. กำหนดค่าเริ่มต้น 2D Map
+    // ==========================================
+    // 2. Initializing 2D Map (Leaflet)
+    // ==========================================
     function init2DMap() {
       map2D = L.map('map-canvas', {
         center: [13.75, 100.5],
@@ -475,41 +659,105 @@
       });
     }
 
-    // 3. ฟังก์ชันสลับมุมมอง 2D แผนที่ <-> 3D ลูกโลก
+    // ==========================================
+    // 3. Collapsible Menus: Logic & Animations
+    // ==========================================
+    function toggleLeftPanel(forceState = null) {
+      isLeftOpen = forceState !== null ? forceState : !isLeftOpen;
+      const panel = document.getElementById('left-panel');
+      const trigger = document.getElementById('left-dock-trigger');
+      const arrow = document.getElementById('left-dock-arrow');
+
+      if (isLeftOpen) {
+        panel.classList.remove('-translate-x-[115%]', 'opacity-0', 'pointer-events-none');
+        panel.classList.add('translate-x-0', 'opacity-100', 'pointer-events-auto');
+        trigger.classList.add('opacity-0', 'pointer-events-none');
+        if (arrow) arrow.classList.add('rotate-180');
+      } else {
+        panel.classList.remove('translate-x-0', 'opacity-100', 'pointer-events-auto');
+        panel.classList.add('-translate-x-[115%]', 'opacity-0', 'pointer-events-none');
+        trigger.classList.remove('opacity-0', 'pointer-events-none');
+        if (arrow) arrow.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleRightPanel(forceState = null) {
+      isRightOpen = forceState !== null ? forceState : !isRightOpen;
+      const panel = document.getElementById('right-panel');
+      const trigger = document.getElementById('right-dock-trigger');
+      const arrow = document.getElementById('right-dock-arrow');
+
+      if (isRightOpen) {
+        panel.classList.remove('translate-x-[115%]', 'opacity-0', 'pointer-events-none');
+        panel.classList.add('translate-x-0', 'opacity-100', 'pointer-events-auto');
+        trigger.classList.add('opacity-0', 'pointer-events-none');
+        if (arrow) arrow.classList.add('-rotate-180');
+      } else {
+        panel.classList.remove('translate-x-0', 'opacity-100', 'pointer-events-auto');
+        panel.classList.add('translate-x-[115%]', 'opacity-0', 'pointer-events-none');
+        trigger.classList.remove('opacity-0', 'pointer-events-none');
+        if (arrow) arrow.classList.remove('-rotate-180');
+      }
+    }
+
+    function autoCollapseOnMobile() {
+      if (window.innerWidth < 768) {
+        toggleLeftPanel(false);
+        toggleRightPanel(false);
+      }
+    }
+
+    // ==========================================
+    // 4. View Mode Switching (2D / 3D)
+    // ==========================================
     function switchDisplayMode(mode) {
       currentMode = mode;
       const globeEl = document.getElementById('globe-canvas');
       const mapEl = document.getElementById('map-canvas');
-      const btn2d = document.getElementById('btn-mode-2d');
-      const btn3d = document.getElementById('btn-mode-3d');
       const statMode = document.getElementById('stat-view-mode');
       const btnSpin = document.getElementById('btn-spin');
+
+      // Header Quick Buttons
+      const q3d = document.getElementById('btn-quick-3d');
+      const q2d = document.getElementById('btn-quick-2d');
+      // Panel Buttons
+      const p3d = document.getElementById('btn-panel-3d');
+      const p2d = document.getElementById('btn-panel-2d');
+
+      const activeClassQuick = "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-sm flex items-center gap-1";
+      const inactiveClassQuick = "px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-white transition flex items-center gap-1";
+
+      const activeClassPanel = "py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-sm border border-sky-400/40";
+      const inactiveClassPanel = "py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5";
 
       if (mode === '2d') {
         globeEl.classList.add('hidden');
         mapEl.classList.remove('hidden');
-        btnSpin.classList.add('opacity-40', 'pointer-events-none');
+        btnSpin.classList.add('opacity-30', 'pointer-events-none');
 
-        btn2d.className = "px-2 py-1 rounded-lg bg-cyan-600/30 text-cyan-300 border border-cyan-500/50 text-[11px] font-semibold flex items-center justify-center gap-1 transition";
-        btn3d.className = "px-2 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1 transition";
-        statMode.innerText = "2D Map";
+        q2d.className = activeClassQuick;
+        q3d.className = inactiveClassQuick;
+        p2d.className = activeClassPanel;
+        p3d.className = inactiveClassPanel;
 
-        if (!map2D) {
-          init2DMap();
-        }
+        statMode.innerText = "2D GIS";
+
+        if (!map2D) init2DMap();
         setTimeout(() => {
           map2D.invalidateSize();
           render2DLayers();
-        }, 100);
+        }, 120);
       } else {
         mapEl.classList.add('hidden');
         globeEl.classList.remove('hidden');
-        btnSpin.classList.remove('opacity-40', 'pointer-events-none');
+        btnSpin.classList.remove('opacity-30', 'pointer-events-none');
 
-        btn3d.className = "px-2 py-1 rounded-lg bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[11px] font-semibold flex items-center justify-center gap-1 transition";
-        btn2d.className = "px-2 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1 transition";
+        q3d.className = activeClassQuick;
+        q2d.className = inactiveClassQuick;
+        p3d.className = activeClassPanel;
+        p2d.className = inactiveClassPanel;
+
         statMode.innerText = "3D Globe";
-
         updateGlobe3DLayers();
       }
     }
@@ -518,32 +766,22 @@
       if (currentMode !== '3d') return;
       globe.controls().autoRotate = !globe.controls().autoRotate;
       const spinText = document.getElementById('spin-btn-text');
+      const icon = document.getElementById('spin-icon');
       if (globe.controls().autoRotate) {
-        spinText.innerText = "Toggle Spin";
+        spinText.innerText = "Auto Spin";
+        icon.classList.add('animate-spin');
       } else {
-        spinText.innerText = "Manual";
+        spinText.innerText = "Spin: Off";
+        icon.classList.remove('animate-spin');
       }
     }
 
-    // ฟังก์ชันเปิด/ปิดแผง Drawer บนหน้าจอมือถือและคอมพิวเตอร์
-    function toggleDrawer(elementId) {
-      const el = document.getElementById(elementId);
-      if (elementId === 'sidebar') {
-        el.classList.toggle('-translate-x-[110%]');
-      } else if (elementId === 'right-panel') {
-        el.classList.toggle('translate-x-[110%]');
-      }
-    }
-
-    function autoCloseDrawersOnMobile() {
-      if (window.innerWidth < 640) {
-        document.getElementById('sidebar').classList.add('-translate-x-[110%]');
-        document.getElementById('right-panel').classList.add('translate-x-[110%]');
-      }
-    }
-
-    // 4. ดึงข้อมูลแผ่นดินไหวจาก USGS
+    // ==========================================
+    // 5. Data Feeds: USGS & Open-Meteo
+    // ==========================================
     async function fetchQuakeData() {
+      const refreshIcon = document.getElementById('quake-refresh-icon');
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
       try {
         const res = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
         const data = await res.json();
@@ -551,9 +789,15 @@
         renderQuakesList();
         updateAllLayers();
         updateStats();
-        document.getElementById('last-update-time').innerText = new Date().toLocaleTimeString('en-US');
+        const timeStr = new Date().toLocaleTimeString('en-US');
+        document.getElementById('last-update-time').innerText = timeStr;
+        document.getElementById('live-clock').innerText = `Updated ${timeStr}`;
       } catch (err) {
-        console.error("USGS Error:", err);
+        console.error("USGS Feed Error:", err);
+      } finally {
+        if (refreshIcon) {
+          setTimeout(() => refreshIcon.classList.remove('animate-spin'), 600);
+        }
       }
     }
 
@@ -568,36 +812,68 @@
       });
 
       document.getElementById('tab-count-quake').innerText = filtered.length;
+      document.getElementById('badge-quake-counter').innerText = filtered.length;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400">ไม่พบรายงานแผ่นดินไหวในระดับนี้</div>';
+        return;
+      }
 
       filtered.forEach(quake => {
         const [lon, lat, depth] = quake.geometry.coordinates;
         const mag = quake.properties.mag;
         const place = quake.properties.place;
-        const time = new Date(quake.properties.time).toLocaleTimeString('en-US');
-        const color = mag >= 6.5 ? '#ef4444' : (mag >= 5.0 ? '#f59e0b' : '#38bdf8');
+        const timeAgo = getTimeAgo(quake.properties.time);
+        
+        let color = '#38bdf8';
+        let bgGlow = 'rgba(56, 189, 248, 0.15)';
+        let borderGlow = 'rgba(56, 189, 248, 0.35)';
 
-        const latT = lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`;
-        const lonT = lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`;
+        if (mag >= 6.5) {
+          color = '#f43f5e';
+          bgGlow = 'rgba(244, 63, 94, 0.2)';
+          borderGlow = 'rgba(244, 63, 94, 0.45)';
+        } else if (mag >= 5.0) {
+          color = '#f59e0b';
+          bgGlow = 'rgba(245, 158, 11, 0.2)';
+          borderGlow = 'rgba(245, 158, 11, 0.45)';
+        }
 
-        const item = document.createElement('div');
-        item.className = 'p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-rose-500/50 cursor-pointer transition flex items-center justify-between font-sans';
-        item.innerHTML = `
-          <div class="flex items-center space-x-2">
-            <span class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style="background-color: ${color}25; color: ${color}; border: 1px solid ${color}60">
+        const latT = lat >= 0 ? `${lat.toFixed(1)}°N` : `${Math.abs(lat).toFixed(1)}°S`;
+        const lonT = lon >= 0 ? `${lon.toFixed(1)}°E` : `${Math.abs(lon).toFixed(1)}°W`;
+
+        const card = document.createElement('div');
+        card.className = 'glass-card p-2.5 rounded-2xl cursor-pointer transition flex items-center justify-between gap-2.5 group';
+        card.innerHTML = `
+          <div class="flex items-center space-x-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 font-mono-code transition-transform group-hover:scale-105" style="background-color: ${bgGlow}; color: ${color}; border: 1px solid ${borderGlow}; box-shadow: 0 0 12px ${color}33;">
               ${mag.toFixed(1)}
-            </span>
-            <div>
-              <div class="text-xs font-semibold text-slate-200 line-clamp-1">${place}</div>
-              <div class="text-[10px] text-slate-400 font-mono">${latT}, ${lonT} • Depth ${depth} km</div>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-slate-100 truncate group-hover:text-sky-300 transition-colors">${place}</div>
+              <div class="text-[10px] text-slate-400 font-mono-code flex items-center gap-1.5 mt-0.5">
+                <span>${latT}, ${lonT}</span>
+                <span>•</span>
+                <span>ลึก ${depth} กม.</span>
+              </div>
             </div>
           </div>
+          <span class="text-[9px] font-mono-code text-slate-400 flex-shrink-0">${timeAgo}</span>
         `;
-        item.onclick = () => {
-          flyToLocation(lat, lon, 1.4, 6);
-          autoCloseDrawersOnMobile();
+        card.onclick = () => {
+          flyToLocation(lat, lon, 1.35, 6);
+          autoCollapseOnMobile();
         };
-        listEl.appendChild(item);
+        listEl.appendChild(card);
       });
+    }
+
+    function getTimeAgo(timestamp) {
+      const diffMin = Math.round((Date.now() - timestamp) / 60000);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHour = Math.round(diffMin / 60);
+      if (diffHour < 24) return `${diffHour}h ago`;
+      return `${Math.round(diffHour / 24)}d ago`;
     }
 
     function filterQuakes() {
@@ -613,7 +889,6 @@
       }
     }
 
-    // 5. ดึงข้อมูลสภาพอากาศ
     async function loadCitiesAndWeather() {
       const citiesListEl = document.getElementById('cities-panel');
       citiesListEl.innerHTML = '';
@@ -638,17 +913,19 @@
           const lonT = city.lon >= 0 ? `${city.lon.toFixed(1)}°E` : `${Math.abs(city.lon).toFixed(1)}°W`;
 
           const card = document.createElement('div');
-          card.className = 'p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition flex items-center justify-between font-sans';
+          card.className = 'glass-card p-2.5 rounded-2xl cursor-pointer transition flex items-center justify-between group';
           card.innerHTML = `
             <div>
-              <div class="text-xs font-semibold text-slate-200">${city.name} (${city.country})</div>
-              <div class="text-[10px] text-slate-400 font-mono">${latT}, ${lonT} • Wind ${cur.windspeed} km/h</div>
+              <div class="text-xs font-semibold text-slate-100 group-hover:text-cyan-300 transition-colors">${city.name} <span class="text-[10px] text-slate-400 font-normal">(${city.country})</span></div>
+              <div class="text-[10px] text-slate-400 font-mono-code mt-0.5">${latT}, ${lonT} • ลม ${cur.windspeed} km/h</div>
             </div>
-            <div class="text-xs font-bold text-cyan-300 font-mono">${cur.temperature}°C</div>
+            <div class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-sky-400 font-mono-code">
+              ${cur.temperature}°C
+            </div>
           `;
           card.onclick = () => {
             flyToLocation(city.lat, city.lon, 1.4, 6);
-            autoCloseDrawersOnMobile();
+            autoCollapseOnMobile();
           };
           citiesListEl.appendChild(card);
         } catch (e) {
@@ -657,7 +934,6 @@
       }
     }
 
-    // 6. โหลดแนวรอยต่อเปลือกโลก
     async function loadTectonicPlates() {
       try {
         const res = await fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json');
@@ -668,6 +944,9 @@
       }
     }
 
+    // ==========================================
+    // 6. Layer Rendering Updates
+    // ==========================================
     function updateAllLayers() {
       updateGlobe3DLayers();
       if (map2D) render2DLayers();
@@ -679,6 +958,7 @@
       const showGraticules = document.getElementById('chk-graticules').checked;
       const showQuakes = document.getElementById('chk-quakes').checked;
 
+      // Labels Layer
       if (showCountries) {
         globe.labelsData(countryLabels.map(c => ({
           lat: c.lat,
@@ -691,6 +971,7 @@
         globe.labelsData([]);
       }
 
+      // Quakes Data
       const points = [];
       const rings = [];
 
@@ -704,22 +985,24 @@
         filtered.forEach(q => {
           const [lon, lat, depth] = q.geometry.coordinates;
           const mag = q.properties.mag;
-          const color = mag >= 6.5 ? '#ef4444' : (mag >= 5.0 ? '#f59e0b' : '#38bdf8');
+          const color = mag >= 6.5 ? '#f43f5e' : (mag >= 5.0 ? '#f59e0b' : '#38bdf8');
           const latT = lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`;
           const lonT = lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`;
 
           points.push({
             lat: lat,
             lon: lon,
-            alt: Math.min(mag * 0.008, 0.05),
+            alt: Math.min(mag * 0.009, 0.055),
             radius: Math.max(mag * 0.12, 0.35),
             color: color,
             label: `
-              <div style="background: rgba(15, 23, 42, 0.95); padding: 8px 12px; border-radius: 10px; color: #fff; font-family: 'Sarabun', sans-serif; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 8px 24px rgba(0,0,0,0.6); max-width: 230px;">
-                <div style="color: ${color}; font-weight: bold; font-size: 13px; margin-bottom: 2px;">ขนาด M ${mag.toFixed(1)} แมกนิจูด</div>
-                <div style="font-size: 11px; color: #e2e8f0;"><b>สถานที่:</b> ${q.properties.place}</div>
-                <div style="font-size: 11px; color: #38bdf8; font-family: monospace; margin-top: 2px;"><b>พิกัด:</b> ${latT}, ${lonT}</div>
-                <div style="font-size: 11px; color: #94a3b8;"><b>ความลึก:</b> ${depth} กิโลเมตร</div>
+              <div style="background: rgba(10, 15, 30, 0.95); padding: 10px 14px; border-radius: 14px; color: #fff; font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif; border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-width: 240px;">
+                <div style="color: ${color}; font-weight: 800; font-size: 14px; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+                  <span>●</span> <span>M ${mag.toFixed(1)} MAGNITUDE</span>
+                </div>
+                <div style="font-size: 11px; color: #f1f5f9; line-height: 1.4;">${q.properties.place}</div>
+                <div style="font-size: 10px; color: #38bdf8; font-family: monospace; margin-top: 5px;">พิกัด: ${latT}, ${lonT}</div>
+                <div style="font-size: 10px; color: #94a3b8; font-family: monospace;">ความลึก: ${depth} กม.</div>
               </div>
             `
           });
@@ -728,8 +1011,8 @@
             rings.push({
               lat: lat,
               lon: lon,
-              maxR: mag * 1.1,
-              color: t => `rgba(${mag >= 6 ? '239, 68, 68' : '245, 158, 11'}, ${Math.sqrt(1 - t)})`
+              maxR: mag * 1.15,
+              color: t => `rgba(${mag >= 6.5 ? '244, 63, 94' : '245, 158, 11'}, ${Math.sqrt(1 - t)})`
             });
           }
         });
@@ -738,6 +1021,7 @@
       globe.pointsData(points);
       globe.ringsData(rings);
 
+      // Paths Layer
       const allPaths = [];
       if (showGraticules) allPaths.push(...graticuleLines);
       if (showPlates && tectonicPlatesData && tectonicPlatesData.features) {
@@ -747,7 +1031,7 @@
             allPaths.push({
               coords: rawCoords.map(c => [c[1], c[0]]),
               color: 'rgba(249, 115, 22, 0.75)',
-              weight: 1.5
+              weight: 1.6
             });
           }
         });
@@ -777,7 +1061,7 @@
           style: {
             color: '#f97316',
             weight: 2,
-            opacity: 0.8
+            opacity: 0.85
           }
         }).addTo(plates2DLayerGroup);
       }
@@ -790,9 +1074,9 @@
         });
 
         filtered.forEach(q => {
-          const [lon, lat, depth] = quake.geometry.coordinates;
-          const mag = quake.properties.mag;
-          const color = mag >= 6.5 ? '#ef4444' : (mag >= 5.0 ? '#f59e0b' : '#38bdf8');
+          const [lon, lat, depth] = q.geometry.coordinates;
+          const mag = q.properties.mag;
+          const color = mag >= 6.5 ? '#f43f5e' : (mag >= 5.0 ? '#f59e0b' : '#38bdf8');
           const radius = Math.max(mag * 2.8, 5);
 
           L.circleMarker([lat, lon], {
@@ -800,9 +1084,9 @@
             color: '#ffffff',
             weight: 1.5,
             fillColor: color,
-            fillOpacity: 0.8
+            fillOpacity: 0.85
           }).bindPopup(`
-            <div style="font-family: 'Sarabun', sans-serif; font-size: 12px; color: #fff;">
+            <div style="font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif; font-size: 12px; color: #fff;">
               <b style="color: ${color}; font-size: 13px;">M ${mag.toFixed(1)} Magnitude</b><br>
               <b>สถานที่:</b> ${q.properties.place}<br>
               <b>ความลึก:</b> ${depth} กม.<br>
@@ -822,18 +1106,21 @@
     }
 
     function switchTab(tab) {
+      const activeTabClass = "flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-rose-600/80 to-rose-500/80 text-white shadow-sm border border-rose-400/30";
+      const inactiveTabClass = "flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5";
+
       if (tab === 'quakes') {
         document.getElementById('quakes-panel').classList.remove('hidden');
         document.getElementById('cities-panel').classList.add('hidden');
         document.getElementById('quake-filter-box').classList.remove('hidden');
-        document.getElementById('tab-btn-quakes').className = "flex-1 py-1 rounded-xl font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 transition text-center text-xs";
-        document.getElementById('tab-btn-cities').className = "flex-1 py-1 rounded-xl font-medium text-slate-400 hover:text-slate-200 transition text-center text-xs";
+        document.getElementById('tab-btn-quakes').className = activeTabClass;
+        document.getElementById('tab-btn-cities').className = inactiveTabClass;
       } else {
         document.getElementById('quakes-panel').classList.add('hidden');
         document.getElementById('cities-panel').classList.remove('hidden');
         document.getElementById('quake-filter-box').classList.add('hidden');
-        document.getElementById('tab-btn-cities').className = "flex-1 py-1 rounded-xl font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition text-center text-xs";
-        document.getElementById('tab-btn-quakes').className = "flex-1 py-1 rounded-xl font-medium text-slate-400 hover:text-slate-200 transition text-center text-xs";
+        document.getElementById('tab-btn-cities').className = activeTabClass.replace(/from-rose-600\/80 to-rose-500\/80/g, 'from-cyan-600/80 to-cyan-500/80').replace(/border-rose-400\/30/g, 'border-cyan-400/30');
+        document.getElementById('tab-btn-quakes').className = inactiveTabClass;
       }
     }
 
@@ -849,7 +1136,12 @@
       if (map2D) map2D.invalidateSize();
     });
 
-    // เริ่มต้นระบบ
+    // Start on Desktop: default left dock open, right closed for clean overview
+    if (window.innerWidth >= 1280) {
+      toggleLeftPanel(true);
+    }
+
+    // Initialize System
     loadTectonicPlates();
     fetchQuakeData();
     loadCitiesAndWeather();
